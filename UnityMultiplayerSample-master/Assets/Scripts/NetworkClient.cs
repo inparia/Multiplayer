@@ -35,9 +35,10 @@ public class NetworkClient : MonoBehaviour
         Debug.Log("We are now connected to the server");
         sendInfo = true;
         //// Example to send a handshake message:
-        // HandshakeMsg m = new HandshakeMsg();
-        // m.player.id = m_Connection.InternalId.ToString();
-        // SendToServer(JsonUtility.ToJson(m));
+        //HandshakeMsg m = new HandshakeMsg();
+        PlayerUpdateMsg m = new PlayerUpdateMsg();
+        m.player.id = m_Connection.InternalId.ToString();
+        SendToServer(JsonUtility.ToJson(m));
     }
 
     void OnData(DataStreamReader stream){
@@ -53,7 +54,7 @@ public class NetworkClient : MonoBehaviour
             break;
             case Commands.PLAYER_UPDATE:
             PlayerUpdateMsg puMsg = JsonUtility.FromJson<PlayerUpdateMsg>(recMsg);
-            Debug.Log("Player update message received!");
+            Debug.Log(recMsg);
             break;
             case Commands.SERVER_UPDATE:
             ServerUpdateMsg suMsg = JsonUtility.FromJson<ServerUpdateMsg>(recMsg);
@@ -115,7 +116,6 @@ public class NetworkClient : MonoBehaviour
         }
 
         if (sendInfo) {
-            Debug.Log(t.gameObject.transform.position);
             SendToServer(JsonUtility.ToJson(t.gameObject.transform.position));
         }
     }
