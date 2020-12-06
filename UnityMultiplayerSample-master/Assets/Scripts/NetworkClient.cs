@@ -14,7 +14,7 @@ public class NetworkClient : MonoBehaviour
     public ushort serverPort;
     private GameObject t;
     private bool sendInfo;
-    private PlayerUpdateMsg m;
+    private GameObject x;
     void Start ()
     {
         m_Driver = NetworkDriver.Create();
@@ -22,7 +22,6 @@ public class NetworkClient : MonoBehaviour
         var endpoint = NetworkEndPoint.Parse(serverIP,serverPort);
         m_Connection = m_Driver.Connect(endpoint);
         sendInfo = false;
-        m = new PlayerUpdateMsg();
         t = GameObject.Find("Cube");
     }
     
@@ -47,15 +46,16 @@ public class NetworkClient : MonoBehaviour
         stream.ReadBytes(bytes);
         string recMsg = Encoding.ASCII.GetString(bytes.ToArray());
         NetworkHeader header = JsonUtility.FromJson<NetworkHeader>(recMsg);
-
-        switch(header.cmd){
+        
+        switch (header.cmd){
             case Commands.HANDSHAKE:
             HandshakeMsg hsMsg = JsonUtility.FromJson<HandshakeMsg>(recMsg);
             Debug.Log("Handshake message received!");
-            break;
+                break;
             case Commands.PLAYER_UPDATE:
             PlayerUpdateMsg puMsg = JsonUtility.FromJson<PlayerUpdateMsg>(recMsg);
-            Debug.Log(puMsg.player.cubPos);
+                x.transform.position = puMsg.player.cubPos;
+                Debug.Log(puMsg.player.cubPos);
             break;
             case Commands.SERVER_UPDATE:
             ServerUpdateMsg suMsg = JsonUtility.FromJson<ServerUpdateMsg>(recMsg);
@@ -101,6 +101,7 @@ public class NetworkClient : MonoBehaviour
             if (cmd == NetworkEvent.Type.Connect)
             {
                 OnConnect();
+                x = GameObject.CreatePrimitive(PrimitiveType.Cube);
             }
             else if (cmd == NetworkEvent.Type.Data)
             {
@@ -116,6 +117,7 @@ public class NetworkClient : MonoBehaviour
         }
        if(sendInfo)
         {
+            PlayerUpdateMsg m = new PlayerUpdateMsg();
             m.player.cubPos = t.transform.position;
             m.player.id = m_Connection.InternalId.ToString();
             SendToServer(JsonUtility.ToJson(m));

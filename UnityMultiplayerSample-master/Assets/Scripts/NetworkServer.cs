@@ -11,7 +11,6 @@ public class NetworkServer : MonoBehaviour
     public NetworkDriver m_Driver;
     public ushort serverPort;
     private NativeList<NetworkConnection> m_Connections;
-    public Transform updatedPos;
     void Start ()
     {
         m_Driver = NetworkDriver.Create();
@@ -40,8 +39,8 @@ public class NetworkServer : MonoBehaviour
     void OnConnect(NetworkConnection c){
         m_Connections.Add(c);
         Debug.Log("Accepted a connection");
+
         //// Example to send a handshake message:
-        // HandshakeMsg m = new HandshakeMsg();
 
     }
 
@@ -58,12 +57,16 @@ public class NetworkServer : MonoBehaviour
             break;
             case Commands.PLAYER_UPDATE:
             PlayerUpdateMsg puMsg = JsonUtility.FromJson<PlayerUpdateMsg>(recMsg);
-            Debug.Log("Player ID : " + puMsg.player.id);
-            Debug.Log("Player X : " + puMsg.player.cubPos.x);
-            Debug.Log("Player Y : " + puMsg.player.cubPos.y);
-            Debug.Log("Player Z : " + puMsg.player.cubPos.z);
+                Debug.Log(puMsg.player.cubPos);
+                PlayerUpdateMsg m = new PlayerUpdateMsg();
+                m.player.cubPos = puMsg.player.cubPos;
+                m.player.id = puMsg.player.id;
+                foreach(NetworkConnection tempC in m_Connections)
+                {
+                    SendToClient(JsonUtility.ToJson(m), tempC);
+                }
+                break;
 
-            break;
             case Commands.SERVER_UPDATE:
             ServerUpdateMsg suMsg = JsonUtility.FromJson<ServerUpdateMsg>(recMsg);
             Debug.Log("Server update message received!");
@@ -103,6 +106,7 @@ public class NetworkServer : MonoBehaviour
             // Check if there is another new connection
             c = m_Driver.Accept();
         }
+
         // Read Incoming Messages
         DataStreamReader stream;
         for (int i = 0; i < m_Connections.Length; i++)
