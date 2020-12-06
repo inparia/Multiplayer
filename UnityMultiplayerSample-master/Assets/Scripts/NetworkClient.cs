@@ -14,14 +14,16 @@ public class NetworkClient : MonoBehaviour
     public ushort serverPort;
     private GameObject t;
     private bool sendInfo;
+    private PlayerUpdateMsg m;
     void Start ()
     {
         m_Driver = NetworkDriver.Create();
         m_Connection = default(NetworkConnection);
         var endpoint = NetworkEndPoint.Parse(serverIP,serverPort);
         m_Connection = m_Driver.Connect(endpoint);
-        t = GameObject.Find("Cube");
         sendInfo = false;
+        m = new PlayerUpdateMsg();
+        t = GameObject.Find("Cube");
     }
     
     void SendToServer(string message){
@@ -34,11 +36,10 @@ public class NetworkClient : MonoBehaviour
     void OnConnect(){
         Debug.Log("We are now connected to the server");
         sendInfo = true;
+
         //// Example to send a handshake message:
         //HandshakeMsg m = new HandshakeMsg();
-        PlayerUpdateMsg m = new PlayerUpdateMsg();
-        m.player.id = m_Connection.InternalId.ToString();
-        SendToServer(JsonUtility.ToJson(m));
+
     }
 
     void OnData(DataStreamReader stream){
@@ -54,7 +55,7 @@ public class NetworkClient : MonoBehaviour
             break;
             case Commands.PLAYER_UPDATE:
             PlayerUpdateMsg puMsg = JsonUtility.FromJson<PlayerUpdateMsg>(recMsg);
-            Debug.Log(recMsg);
+            Debug.Log(puMsg.player.cubPos);
             break;
             case Commands.SERVER_UPDATE:
             ServerUpdateMsg suMsg = JsonUtility.FromJson<ServerUpdateMsg>(recMsg);
@@ -100,7 +101,6 @@ public class NetworkClient : MonoBehaviour
             if (cmd == NetworkEvent.Type.Connect)
             {
                 OnConnect();
-
             }
             else if (cmd == NetworkEvent.Type.Data)
             {
@@ -114,9 +114,11 @@ public class NetworkClient : MonoBehaviour
             cmd = m_Connection.PopEvent(m_Driver, out stream);
 
         }
-
-        if (sendInfo) {
-            SendToServer(JsonUtility.ToJson(t.gameObject.transform.position));
+       if(sendInfo)
+        {
+            m.player.cubPos = t.transform.position;
+            m.player.id = m_Connection.InternalId.ToString();
+            SendToServer(JsonUtility.ToJson(m));
         }
     }
 }
